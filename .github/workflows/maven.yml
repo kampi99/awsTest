@@ -40,7 +40,7 @@ jobs:
 
     - name: Deploy with AWS CodeDeploy
       run: aws deploy create-deployment
-          --application-name codedeploy
+          --application-name CodeDeploy
           --deployment-config-name CodeDeployDefault.OneAtATime
-          --deployment-group-name deploy-gruop
+          --deployment-group-name deploygroup
           --s3-location bucket=kiwanbucket,bundleType=zip,key=ROOT.zip
