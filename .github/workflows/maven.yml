@@ -1,17 +1,7 @@
-# This workflow will build a Java project with Maven, and cache/restore any dependencies to improve the workflow execution time
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-maven
-
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-
 name: Java CI with Maven
 
 on:
   push:
-    branches: [ "master" ]
-  pull_request:
     branches: [ "master" ]
 
 jobs:
@@ -27,7 +17,30 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
         cache: maven
+
     - name: Build with Maven
       run: mvn -B package --file pom.xml
 
     # Optional: Uploads the full dependency graph to GitHub to improve the quality of Dependabot alerts this repository can receive
+    #- name: Update dependency graph
+    #  uses: advanced-security/maven-dependency-submission-action@571e99aab1055c2e71a1e2309b9691de18d6b7d6
+
+    - name: Archive ROOT.war to ROOT.zip
+      run: zip -j ./ROOT.zip /home/runner/work/apiTest/apiTest/target/ROOT.war ./appspec.yml
+
+    - name: Access to AWS
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.ACCESS_KEY }}
+        aws-secret-access-key: ${{ secrets.SECRET_KEY }}
+        aws-region: ap-northeast-2
+
+    - name: Upload ROOT.zip
+      run: aws s3 cp --region ap-northeast-2 ./ROOT.zip s3://kiwanbucket/ROOT.zip
+
+    - name: Deploy with AWS CodeDeploy
+      run: aws deploy create-deployment
+          --application-name api.example.co.kr
+          --deployment-config-name CodeDeployDefault.OneAtATime
+          --deployment-group-name api.example.co.kr.group
+          --s3-location bucket=api.example.co.kr.bucket,bundleType=zip,key=ROOT.zip
